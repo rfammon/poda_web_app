@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental: Procedimento de Corte e Poda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb; /* Fundo muito claro */
+        }
+        .mind-map-node {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+        }
+        .mind-map-node:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        /* Cor de contraste para o tema (Verde da Natureza) */
+        .theme-color-bg { background-color: #38a169; } /* Verde Escuro */
+        .theme-color-text { color: #38a169; }
+        .phase-bg-gestao { background-color: #f6ad55; } /* Laranja */
+        .phase-bg-planejamento { background-color: #4299e1; } /* Azul */
+        .phase-bg-mobilizacao { background-color: #9f7aea; } /* Roxo */
+        .phase-bg-execucao { background-color: #48bb78; } /* Verde claro */
+        .phase-bg-desmobilizacao { background-color: #ed8936; } /* Laranja escuro */
+        .phase-bg-seguranca { background-color: #f56565; } /* Vermelho (Safety) */
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+<div id="app" class="max-w-7xl mx-auto">
+
+    <!-- Cabeçalho -->
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-extrabold text-gray-800">Mapa Mental: Procedimento de Corte e Poda</h1>
+        <p class="text-gray-600 mt-2">Guia rápido interativo para consulta das fases do manual.</p>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        
+        <!-- Coluna do Mapa Mental (50% na tela grande) -->
+        <div id="mind-map-container" class="lg:w-1/2 w-full flex flex-col gap-6">
+            
+            <!-- Nó Central -->
+            <div class="flex justify-center">
+                <div class="theme-color-bg text-white p-6 rounded-full text-xl font-bold text-center shadow-xl w-64 h-64 flex items-center justify-center">
+                    MANUAL CORTE E PODA DE ÁRVORES
+                </div>
+            </div>
+
+            <!-- Fases do Procedimento (Renderizadas por JS) -->
+            <div id="phases-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <!-- Conteúdo será injetado pelo JavaScript -->
+            </div>
+        </div>
+
+        <!-- Coluna dos Painéis de Informação (50% na tela grande) -->
+        <div class="lg:w-1/2 w-full">
+            
+            <!-- Container que será STICKY para TODOS os 3 painéis -->
+            <div class="space-y-8 sticky top-8">
+                
+                <!-- Pergunte ao Manual Panel (AGORA STICKY) -->
+                <div id="gemini-panel" class="bg-white p-6 rounded-xl shadow-xl border-t-4 border-gray-700">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-700">Pergunte ao Manual</h2>
+                    <textarea id="gemini-input" class="w-full p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500" rows="2" placeholder="Ex: Qual o procedimento para corte de árvores com risco iminente?"></textarea>
+                    <button id="gemini-button" onclick="askGemini()" class="mt-2 w-full theme-color-bg text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                        Pergunte ao Manual
+                    </button>
+                    <div id="gemini-results" class="mt-4 p-3 bg-gray-50 border rounded-lg text-sm min-h-[50px]">
+                        <p class="text-gray-500 italic">As respostas aparecerão aqui.</p>
+                    </div>
+                </div>
+
+                <!-- Painel de Conteúdo/Explicação Completa (AGORA STICKY) -->
+                <div id="content-panel" class="bg-white p-6 rounded-xl shadow-2xl border-t-4 border-blue-500">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-600">Conteúdo Detalhado</h2>
+                    <div id="content-explanation">
+                        <p class="text-gray-500 italic">
+                            Clique em um tópico do mapa mental para ler a explicação completa da seção do manual.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Painel do Glossário Interativo (AGORA STICKY) -->
+                <div id="glossary-panel" class="bg-white p-6 rounded-xl shadow-2xl border-t-4 border-gray-400">
+                    <h2 class="text-2xl font-bold mb-4 theme-color-text">Glossário Rápido</h2>
+                    
+                    <div id="glossary-definition">
+                        <p class="text-gray-500 italic">
+                            Aqui aparecerá o termo chave (definição resumida).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Dados EXTRAÍDOS e expandidos do Manual fornecido pelo usuário
+    const mindMapData = [
+        { 
+            phase: 'Gestão', 
+            bgColor: 'phase-bg-gestao', 
+            topics: [
+                { 
+                    name: 'Autorizações e Licenciamento (ASV/APP)', 
+                    link: '#gestao_licenca', 
+                    term: 'ASV', 
+                    definition: 'Autorização de Supressão de Vegetação. Documento emitido pelo órgão ambiental competente que autoriza o corte ou supressão de vegetação nativa ou árvores isoladas.',
+                    fullContent: 'Toda intervenção deve ser realizada com anuência do setor de meio ambiente. <b>ASV:</b> Documento emitido pelo órgão ambiental que autoriza o corte. <b>APP (Área de Preservação Permanente):</b> Espaço protegido por lei. Intervenções permitidas apenas em casos de utilidade pública, interesse social ou baixo impacto ambiental. <b>Dispensa:</b> Indivíduos com DAP inferior a 0,05 m fora de APP estão dispensados. Casos de risco iminente, comprovado por defesa civil, podem ter supressão *a posteriori*.'
+                },
+                { 
+                    name: 'Responsabilidades (RACI) e Compensação', 
+                    link: '#gestao_raci', 
+                    term: 'TCRA', 
+                    definition: 'Termo de Compromisso de Recuperação Ambiental. Instrumento legal que formaliza a obrigação de compensação ambiental por meio de ações de recuperação ou preservação.',
+                    fullContent: 'A <b>Compensação Ambiental</b> é obrigatória para mitigar impactos de supressão de vegetação nativa ou intervenção em APP. O cálculo pode variar de <b>1,25x até 6x</b> a área suprimida, dependendo do tipo de vegetação e da prioridade ambiental da área. As formas de compensação incluem restauração ecológica, preservação remanescente ou compensação em propriedade de terceiros. A Matriz <b>RACI</b> (Responsável, Aprovador, Consultado e Informado) define os papéis do processo.'
+                }
+            ] 
+        },
+        { 
+            phase: 'Planejamento', 
+            bgColor: 'phase-bg-planejamento', 
+            topics: [
+                { 
+                    name: 'Inspeção Visual Expedita e Risco (48h/15 dias)', 
+                    link: '#planejamento_risco', 
+                    term: 'ALTO RISCO', 
+                    definition: 'Defeitos críticos próximos a alvos estratégicos. Exige intervenção em até 48h. Baseado em sistema de pontuação do ANEXO II.',
+                    fullContent: 'Análise minuciosa de <b>5 a 10 minutos</b> por árvore, com foco em: fendas horizontais, carpóforos (cogumelos), galhos mortos com diâmetro superior a 5 cm, uniões em “V” com casca inclusa, e assimetria acentuada da copa (>30%). <b>Classificação de Risco:</b> 🔴 ALTO (até 48h); 🟠 MÉDIO (até 15 dias); 🟢 BAIXO (Monitoramento anual).'
+                },
+                { 
+                    name: 'Avaliação Radicular e RCR', 
+                    link: '#planejamento_rcr', 
+                    term: 'RCR', 
+                    definition: 'Raio Crítico Radicular. Área de influência e sustentação mecânica das raízes, onde o Raio é calculado como 1,5 × DAP.',
+                    fullContent: 'O <b>Raio Crítico Radicular (RCR)</b> é delimitado por: Raio = 1,5 × DAP. Dentro desta área, verificar interferências com infraestrutura (calçadas rachadas), perda de mais de 40% de raízes de sustentação, compactação/asfixia e apodrecimento em raízes primárias (>3 cm). <b>Poda de Raízes deve ser evitada e requer profissional habilitado.</b>' 
+                },
+                { 
+                    name: 'Plano de Trabalho Detalhado', 
+                    link: '#planejamento_plano', 
+                    term: 'Critérios de Aceitação', 
+                    definition: 'Condições definidas previamente (Ex: defeitos corrigidos, resíduos removidos com segurança) para que a atividade seja dada como concluída.',
+                    fullContent: 'O Plano deve consolidar todas as informações para execução segura. Deve contemplar: <b>Objetivo e Escopo</b>, <b>Local e Condições Operacionais</b>, <b>Atividades Específicas</b>, <b>Critérios de Aceitação</b>, <b>Recursos e Equipamentos</b> e <b>Cronograma</b>. A supervisão ativa é obrigatória em todas as etapas, com meios de comunicação disponíveis.'
+                }
+            ] 
+        },
+        { 
+            phase: 'Mobilização', 
+            bgColor: 'phase-bg-mobilizacao', 
+            topics: [
+                { 
+                    name: 'Delimitação de Isolamento e Perímetro', 
+                    link: '#mobilizacao_isolamento', 
+                    term: 'Perímetro de Exclusão', 
+                    definition: 'Raio de perigo a ser isolado, calculado como Comprimento do galho + 50% ou Altura da árvore + 50% (para árvore inteira).', 
+                    fullContent: 'O isolamento é obrigatório e deve usar Pedestais metálicos/plásticos (máx. 2,5m) e correntes plásticas (Preto/Amarelo). <b>É proibido o uso de fita zebrada (salvo emergências).</b> Deve-se criar rotas alternativas para pedestres (mínimo 2m do perímetro) e garantir pelo menos dois acessos em áreas extensas.'
+                },
+                { 
+                    name: 'Pré-Serviço e Desligamento de Energia', 
+                    link: '#mobilizacao_energia', 
+                    term: 'Restrições Operacionais', 
+                    definition: 'Proibição de podas ou cortes em árvores que estejam em contato com redes ativas. Em caso de impossibilidade de desligamento, a atividade deve ser suspensa.',
+                    fullContent: '<b>Inspeção Pré-Serviço:</b> Verificar umidade, inclinação do terreno, obstáculos e animais peçonhentos. <b>Desligamento de Linhas:</b> Essencial em interferências com redes elétricas. Deve ser solicitado formalmente e confirmado. Proibido o trabalho com redes ativas.'
+                },
+                 { 
+                    name: 'Liberação de Permissão de Trabalho (PT)', 
+                    link: '#mobilizacao_pt', 
+                    term: 'PT', 
+                    definition: 'Permissão de Trabalho. Documento obrigatório para execução segura, que deve contemplar riscos, medidas preventivas e ações de emergência.',
+                    fullContent: 'A <b>PT é obrigatória</b> e deve ser elaborada conforme o escopo, riscos e medidas preventivas. Deve ser validada com a equipe de segurança e permanecer disponível no local. Qualquer alteração no escopo ou nas condições do trabalho exige <b>revalidação da PT</b>.'
+                }
+            ] 
+        },
+        { 
+            phase: 'Execução', 
+            bgColor: 'phase-bg-execucao', 
+            topics: [
+                { 
+                    name: 'Técnicas de Poda (Três Cortes)', 
+                    link: '#execucao_corte', 
+                    term: 'Colar do Galho', 
+                    definition: 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos. Deve ser preservado no corte de acabamento.',
+                    fullContent: 'Aplicar a <b>Poda em Três Cortes</b> para preservar a crista da casca e o colar do galho: 1) Corte inferior (alívio, fora do colar); 2) Corte superior (destaque); 3) Corte de acabamento (rente à crista). <b>Práticas a Evitar:</b> Poda drástica (topping), Corte cego (tipping), Cortes rentes e com toco.'
+                },
+                { 
+                    name: 'Tipos de Poda (Desbaste, Elevação, Redução)', 
+                    link: '#execucao_tipos', 
+                    term: 'Desbaste da Copa', 
+                    definition: 'Remoção seletiva de galhos internos para aumentar a penetração de luz e a circulação de ar, respeitando o limite de até 25% da copa viva por intervenção.',
+                    fullContent: '<b>Desbaste:</b> Remove galhos internos (máx. 25% da copa viva). <b>Elevação:</b> Remove galhos inferiores, mantendo pelo menos 2/3 da altura total com copa viva. <b>Redução:</b> Diminui o volume por corte em garfo, preservando ramos laterais com diâmetro ≥ 1/3 do ramo removido. <b>Evitar Poda Drástica.</b>'
+                },
+                { 
+                    name: 'Supressão, Abate Direcional e Rota de Fuga', 
+                    link: '#execucao_supressao', 
+                    term: 'Corte Direcional', 
+                    definition: 'Técnica de abate que consiste em fazer um entalhe de 45º a 70º e um corte de abate oposto, deixando uma "dobradiça" para direcionar a queda.',
+                    fullContent: 'A supressão é só em casos de risco ou determinação legal. O <b>Corte Direcional</b> define o sentido da queda (entalhe + corte de abate). <b>Rota de Fuga:</b> Planejar duas rotas livres de obstáculos, formando um ângulo de aproximadamente <b>45°</b> em relação à direção de queda.'
+                }
+            ] 
+        },
+        { 
+            phase: 'Desmobilização', 
+            bgColor: 'phase-bg-desmobilizacao', 
+            topics: [
+                { 
+                    name: 'Gestão de Resíduos e PNRS', 
+                    link: '#desmob_residuos', 
+                    term: 'PNRS', 
+                    definition: 'Política Nacional de Resíduos Sólidos. Lei nº 12.305/2010 que estabelece diretrizes para o manejo adequado dos resíduos sólidos.',
+                    fullContent: 'Priorizar: <b>Não Geração/Redução</b> e <b>Reutilização/Reciclagem</b> (biomassa, compostagem, mulch). <b>Destinação:</b> Encaminhar somente para instalações licenciadas. <b>Operacional:</b> Segregar por tipo (lenhoso/foliar) e armazenar temporariamente em área sinalizada com controle de acesso.'
+                },
+                { 
+                    name: 'Transporte, MTR e Movimentação Segura', 
+                    link: '#desmob_transporte', 
+                    term: 'MTR', 
+                    definition: 'Manifesto de Transporte de Resíduos. Documento que garante a rastreabilidade dos resíduos desde a origem até a destinação final.',
+                    fullContent: '<b>Movimentação Manual:</b> Somente para peças com peso compatível (NR 17). Usar técnicas de levantamento corretas (coluna ereta, flexionar joelhos). <b>Movimentação Mecânica:</b> Uso de equipamentos adequados (cintas, guinchos) e área isolada. <b>Transporte:</b> Uso de veículos adequados, com enceramento e emissão de MTR quando exigido.'
+                },
+                { 
+                    name: 'Limpeza Final e Liberação da Área', 
+                    link: '#desmob_limpeza', 
+                    term: 'Conferência', 
+                    definition: 'Etapa que assegura a retirada completa de resíduos, remoção de sinalização e condições seguras da área, antes da liberação formal.',
+                    fullContent: 'Remover todos os resíduos arbóreos conforme plano. Retirada de isolamento e sinalização <b>somente após a conclusão das atividades e liberação formal</b>. Desenergizar e inspecionar equipamentos antes da retirada. A <b>Liberação da Área</b> deve ser formalizada pelo responsável técnico.' 
+                }
+            ] 
+        },
+        { 
+            phase: 'Segurança', 
+            bgColor: 'phase-bg-seguranca', 
+            topics: [
+                { 
+                    name: 'Análise de Risco (Rebote, Perigos, AST)', 
+                    link: '#seguranca_risco', 
+                    term: 'Efeito Rebote', 
+                    definition: 'Ocorre quando a corrente, na ponta superior da lâmina guia (sabre), é pinçada ou toca um objeto duro, projetando a motosserra em direção ao operador.',
+                    fullContent: '<b>Perigos Recorrentes:</b> Queda de altura, Choque elétrico, Corte/perfuração, Picadas, Ruído, Fadiga térmica. <b>Prevenção de Rebote:</b> Nunca usar a ponta superior da lâmina. Segurar com firmeza, trabalhar em rotação máxima. <b>AST:</b> Análise de Risco de Tarefa deve ser realizada antes de iniciar a atividade. Supervisão de segurança obrigatória.'
+                },
+                { 
+                    name: 'Equipamentos de Proteção Individual (EPIs)', 
+                    link: '#seguranca_epis', 
+                    term: 'Perneira', 
+                    definition: 'EPI complementar listado para proteção contra animais peçonhentos e para uso com motosserra (calça motoserrista).',
+                    fullContent: '<b>EPIs Básicos:</b> Capacete com jugular, Calçado com biqueira, Viseira/protetor facial, Perneira. <b>Para Motosserra:</b> Luva, Blusão, Calça motoserrista, Protetor auricular (concha). <b>Para Altura:</b> Cinto paraquedista, Talabarte duplo com absorvedor, Trava-queda.'
+                },
+                { 
+                    name: 'Trabalho em Altura (NR-35) e ZLQ', 
+                    link: '#seguranca_altura', 
+                    term: 'ZLQ', 
+                    definition: 'Zona Livre de Queda. Distância de segurança mínima (1 m do piso de referência) a ser respeitada para evitar contato do trabalhador com o piso em caso de queda.',
+                    fullContent: 'Observar requisitos da <b>NR-35</b>. Serviços devem ser paralisados se a velocidade do vento for superior a <b>40 km/h</b>. A utilização de equipamentos de proteção contra queda deve levar em conta o comprimento dos acessórios e prever a <b>ZLQ</b> de 1m. <b>Proibida a escalada livre</b> e a ancoragem do trabalhador nos galhos a serem cortados.'
+                }
+            ] 
+        },
+    ];
+
+    const phasesGrid = document.getElementById('phases-grid');
+    const glossaryDefinition = document.getElementById('glossary-definition');
+    const contentExplanation = document.getElementById('content-explanation');
+
+
+    // ---------------------------------------------------------------------
+    // FUNÇÕES DO MAPA MENTAL
+    // ---------------------------------------------------------------------
+
+    // Função para renderizar o Mapa Mental
+    function renderMindMap() {
+        mindMapData.forEach(phaseData => {
+            // Cria o card da Fase
+            const phaseCard = document.createElement('div');
+            phaseCard.className = `p-4 rounded-xl shadow-lg border-t-8 ${phaseData.bgColor}`;
+
+            // Título da Fase
+            const phaseTitle = document.createElement('h3');
+            phaseTitle.className = 'text-xl font-bold text-white mb-3 uppercase';
+            phaseTitle.textContent = phaseData.phase;
+            phaseCard.appendChild(phaseTitle);
+
+            // Container dos Tópicos
+            const topicsList = document.createElement('div');
+            topicsList.className = 'flex flex-col gap-3';
+
+            phaseData.topics.forEach(topic => {
+                // Cria o nó do Tópico (interativo)
+                const topicNode = document.createElement('a');
+                topicNode.href = topic.link;
+                topicNode.className = 'mind-map-node bg-white text-gray-800 p-3 block transition duration-200 hover:bg-gray-50 flex justify-between items-center';
+                topicNode.innerHTML = `
+                    <span class="font-medium">${topic.name}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                `;
+                
+                // Adiciona o evento de clique para o Glossário e Conteúdo
+                topicNode.addEventListener('click', (e) => {
+                    e.preventDefault(); // Impede a navegação do link placeholder
+                    updatePanels(topic.name, topic.term, topic.definition, topic.fullContent, phaseData.phase);
+                    
+                    // Remove a classe de seleção de todos os nós
+                    document.querySelectorAll('.mind-map-node').forEach(node => {
+                        node.classList.remove('ring-4', 'ring-offset-2', 'ring-green-400', 'bg-green-50');
+                    });
+                    // Adiciona a classe de seleção ao nó clicado
+                    topicNode.classList.add('ring-4', 'ring-offset-2', 'ring-green-400', 'bg-green-50');
+                });
+
+                topicsList.appendChild(topicNode);
+            });
+
+            phaseCard.appendChild(topicsList);
+            phasesGrid.appendChild(phaseCard);
+        });
+    }
+
+    // Função para atualizar os painéis de Conteúdo e Glossário
+    function updatePanels(topicName, term, definition, fullContent, phase) {
+        // --- Atualiza o Painel de Conteúdo Detalhado ---
+        contentExplanation.innerHTML = `
+            <div class="space-y-4">
+                <p class="text-sm font-semibold text-gray-500 uppercase">Fase ${phase} / Tópico: ${topicName}</p>
+                <p class="text-base text-gray-700 leading-relaxed">${fullContent}</p>
+                <hr class="mt-4 border-gray-200">
+                <p class="text-xs text-gray-400">Conteúdo extraído do manual.</p>
+            </div>
+        `;
+
+        // --- Atualiza o Painel do Glossário Rápido ---
+        glossaryDefinition.innerHTML = `
+            <div class="space-y-4">
+                <h3 class="text-2xl font-extrabold text-gray-900">${term}</h3>
+                <p class="text-base text-gray-700 leading-relaxed">${definition}</p>
+            </div>
+        `;
+    }
+
+    // ---------------------------------------------------------------------
+    // FUNÇÃO PERGUNTE AO GEMINI (APENAS CONTEÚDO DO MANUAL)
+    // ---------------------------------------------------------------------
+
+    const apiKey = ""; 
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+    // Consolida todo o conteúdo detalhado do manual para ser usado como contexto
+    const manualContext = mindMapData.flatMap(phase => 
+        phase.topics.map(topic => 
+            `### ${phase.phase} - ${topic.name}\n${topic.fullContent}\n\n`
+        )
+    ).join('');
+
+
+    window.askGemini = async function() {
+        const query = document.getElementById('gemini-input').value.trim();
+        const resultsDiv = document.getElementById('gemini-results');
+        const button = document.getElementById('gemini-button');
+
+        if (!query) {
+            resultsDiv.innerHTML = '<p class="text-red-500">Por favor, digite sua pergunta.</p>';
+            return;
+        }
+
+        // --- CORREÇÃO DE ERRO LOCAL (CORS) ---
+        if (!apiKey && window.location.protocol === 'file:') {
+            button.disabled = false;
+            button.innerHTML = 'Pergunte ao Manual';
+            resultsDiv.innerHTML = '<p class="text-red-600 font-semibold">ERRO: Falha na Conexão. O acesso à API é bloqueado devido à política CORS quando o arquivo é executado diretamente do seu computador (protocolo file://).<br><br>Para usar a função "Pergunte ao Manual", utilize este arquivo dentro do ambiente Canvas ou hospede-o em um servidor web (localhost).</p>';
+            return;
+        }
+        // -------------------------------------
+
+
+        // Set loading state
+        button.disabled = true;
+        button.innerHTML = 'Consultando...';
+        resultsDiv.innerHTML = '<p class="text-gray-500 italic">Analisando o manual...</p>';
+
+        const systemInstruction = `Você é um assistente especializado no manual de "Procedimento de Corte e Poda de Árvores" fornecido abaixo. Sua única fonte de informação para responder deve ser o conteúdo deste manual. Responda à pergunta do usuário com base EXCLUSIVA e FIDESAMENTE no texto. Se a informação não estiver presente, declare explicitamente que a informação não está no manual. Responda em Português.\n\n --- Conteúdo do Manual ---\n ${manualContext}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: query }] }],
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+        };
+
+        let response;
+        let attempts = 0;
+        const maxAttempts = 3;
+        let delay = 1000;
+
+        while (attempts < maxAttempts) {
+            try {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a resposta.";
+                    
+                    // Format the output
+                    resultsDiv.innerHTML = `<p class="text-gray-800 whitespace-pre-wrap">${text}</p>`;
+                    
+                    break; // Exit loop on success
+                } else {
+                    console.error(`Attempt ${attempts + 1} failed with status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (error) {
+                attempts++;
+                console.error(`Fetch error during attempt ${attempts}:`, error);
+                if (attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // Exponential backoff
+                } else {
+                    resultsDiv.innerHTML = '<p class="text-red-600">Erro ao consultar o Gemini. Tente novamente.</p>';
+                }
+            }
+        }
+
+        // Reset button state
+        button.disabled = false;
+        button.innerHTML = 'Pergunte ao Manual';
+    };
+
+    // Inicializa a aplicação
+    window.onload = renderMindMap;
+
+</script>
+
+</body>
+</html>
